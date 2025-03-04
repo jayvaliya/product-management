@@ -4,9 +4,9 @@ const userMiddleware = require('../middlewares/user');
 const productRouter = Router();
 
 // Get all products
-productRouter.get('/', async (req, res) => {
+productRouter.get('/', userMiddleware, async (req, res) => {
   try {
-    const products = await Product.find();
+    const products = await Product.find({ userId: req.user._id });
     res.json(products);
   } catch (error) {
     res
@@ -19,6 +19,9 @@ productRouter.get('/', async (req, res) => {
 productRouter.post('/', userMiddleware, async (req, res) => {
   try {
     const { name, description, quantity, price } = req.body;
+    if (!name || !description || !quantity || !price) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
     const product = new Product({
       name,
       description,

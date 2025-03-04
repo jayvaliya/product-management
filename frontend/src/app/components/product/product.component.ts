@@ -26,7 +26,9 @@ export class ProductComponent implements OnInit {
 
   async loadProducts() {
     try {
-      const response = await axios.get(this.apiUrl);
+      const response = await axios.get(this.apiUrl, {
+        headers: { authorization: `${localStorage.getItem('token')}` },
+      });
       this.products = response.data;
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -43,8 +45,8 @@ export class ProductComponent implements OnInit {
       price: parseFloat(this.price.nativeElement.value) || 0,
     };
 
-    if (!newProduct.name || !newProduct.price) {
-      alert('Name and Price are required');
+    if (!newProduct.name || !newProduct.price || !newProduct.quantity || !newProduct.description) {
+      alert('Name, Price, Quantity, and Description are required');
       return;
     }
 
