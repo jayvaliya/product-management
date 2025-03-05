@@ -1,16 +1,33 @@
-import { NgFor } from '@angular/common';
+import { NgFor, NgIf } from '@angular/common';
 import { Component, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import axios from 'axios';
+
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  quantity: number;
+  price: number;
+}
 
 @Component({
   selector: 'app-product',
   standalone: true,
-  imports: [NgFor],
+  imports: [NgFor, NgIf, FormsModule],
   templateUrl: './product.component.html',
   styleUrls: ['./product.component.css'],
 })
 export class ProductComponent implements OnInit {
-  products: any[] = [];
+  products: Product[] = [];
+  isModalOpen: boolean = false;
+  selectedProduct: Product = {
+    _id: '',
+    name: '',
+    description: '',
+    quantity: 0,
+    price: 0
+  };
   private apiUrl = 'http://127.0.0.1:5000/api/v1/product';
 
   @ViewChild('name') name?: ElementRef;
@@ -71,13 +88,45 @@ export class ProductComponent implements OnInit {
   }
 
   async deleteProduct(id: string) {
+    if (confirm('Are you sure you want to delete this product?')) {
+      try {
+        await axios.delete(`${this.apiUrl}/${id}`, {
+          headers: { Authorization: `${localStorage.getItem('token')}` },
+        });
+        this.loadProducts();
+      } catch (error) {
+        console.error('Error deleting product:', error);
+      }
+    }
+  }
+
+  openModal(product: Product) {
+    this.selectedProduct = { ...product };
+    this.isModalOpen = true;
+  }
+
+  closeModal() {
+    this.isModalOpen = false;
+  }
+
+  async updateProduct() {
     try {
-      await axios.delete(`${this.apiUrl}/${id}`, {
-        headers: { Authorization: `${localStorage.getItem('token')}` },
-      });
+      await axios.put(
+        `${this.apiUrl}/${this.selectedProduct._id}`,
+        {
+          name: this.selectedProduct.name,
+          description: this.selectedProduct.description,
+          quantity: this.selectedProduct.quantity,
+          price: this.selectedProduct.price,
+        },
+        {
+          headers: { Authorization: `${localStorage.getItem('token')}` },
+        }
+      );
+      this.closeModal();
       this.loadProducts();
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error('Error updating product:', error);
     }
   }
 }

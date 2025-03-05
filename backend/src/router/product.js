@@ -39,17 +39,54 @@ productRouter.post('/', userMiddleware, async (req, res) => {
 });
 
 // Get a product by ID
-productRouter.get('/:id', async (req, res) => {
+// productRouter.get('/:id', userMiddleware, async (req, res) => {
+//   try {
+//     const product = await Product.findById(req.params.id);
+//     if (!product) {
+//       return res.status(404).json({ error: 'Product not found' });
+//     }
+//     res.json(product);
+//   } catch (error) {
+//     res
+//       .status(500)
+//       .json({ error: 'Failed to fetch product', details: error.message });
+//   }
+// });
+
+// Update a product by ID
+productRouter.put('/:id', userMiddleware, async (req, res) => {
   try {
+    const { name, description, quantity, price } = req.body;
+
+    // Find the product first
     const product = await Product.findById(req.params.id);
+
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
-    res.json(product);
+
+    // Check if the user owns the product
+    if (product.userId.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ error: 'Unauthorized to update this product' });
+    }
+
+    // Update the product
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      { name, description, quantity, price },
+      { new: true, runValidators: true }
+    );
+
+    res.json({
+      message: 'Product updated successfully',
+      product: updatedProduct,
+    });
   } catch (error) {
     res
       .status(500)
-      .json({ error: 'Failed to fetch product', details: error.message });
+      .json({ error: 'Failed to update product', details: error.message });
   }
 });
 
@@ -63,7 +100,7 @@ productRouter.delete('/:id', userMiddleware, async (req, res) => {
     }
 
     // Check if the user owns the product
-    if (product.userId.toString() !== req.user._id) {
+    if (product.userId.toString() !== req.user._id.toString()) {
       return res
         .status(403)
         .json({ error: 'Unauthorized to delete this product' });
